@@ -16,6 +16,9 @@
 
 package org.gradle.api.credentials;
 
+import org.gradle.api.Incubating;
+import org.gradle.api.provider.Provider;
+
 import javax.annotation.Nullable;
 
 /**
@@ -40,6 +43,16 @@ public interface PasswordCredentials extends Credentials {
     void setUsername(@Nullable String userName);
 
     /**
+     * Sets the user name provider to use when authenticating.
+     *
+     * @param username The user name provider. May be null.
+     *
+     * @since 6.5
+     */
+    @Incubating
+    void setUsername(@Nullable Provider<String> username);
+
+    /**
      * Returns the password to use when authenticating.
      *
      * @return The password. May be null.
@@ -53,4 +66,14 @@ public interface PasswordCredentials extends Credentials {
      * @param password The password. May be null.
      */
     void setPassword(@Nullable String password);
+
+    /**
+     * Sets the password provider to use when authenticating.
+     *
+     * @param password The password provider. May be null.
+     *
+     * @since 6.5
+     */
+    @Incubating
+    void setPassword(@Nullable Provider<String> password);
 }

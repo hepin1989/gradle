@@ -342,9 +342,119 @@ class MavenPublishHttpIntegTest extends AbstractMavenPublishIntegTest {
         module.assertPublishedAsJavaModule()
     }
 
+    @ToBeFixedForInstantExecution
+    def "can publish to authenticated repository using Providers to supply credentials"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'java'
+                id 'maven-publish'
+            }
+            version = '$version'
+            group = '$group'
+
+            publishing {
+                repositories {
+                    maven {
+                        url "${mavenRemoteRepo.uri}"
+                        credentials {
+                            username = providers.gradleProperty('mavenUser')
+                            password = providers.gradleProperty('mavenPassword')
+                        }
+                    }
+                }
+                publications {
+                    maven(MavenPublication) {
+                        from components.java
+                    }
+                }
+            }
+        """
+
+        server.authenticationScheme = AuthScheme.BASIC
+
+        PasswordCredentials credentials = new DefaultPasswordCredentials('username', 'password')
+        module.artifact.expectPut(credentials)
+        module.artifact.sha1.expectPut(credentials)
+        module.artifact.sha256.expectPut(credentials)
+        module.artifact.sha512.expectPut(credentials)
+        module.artifact.md5.expectPut(credentials)
+        module.rootMetaData.expectGetMissing(credentials)
+        module.rootMetaData.expectPut(credentials)
+        module.rootMetaData.sha1.expectPut(credentials)
+        module.rootMetaData.sha256.expectPut(credentials)
+        module.rootMetaData.sha512.expectPut(credentials)
+        module.rootMetaData.md5.expectPut(credentials)
+        module.pom.expectPut(credentials)
+        module.pom.sha1.expectPut(credentials)
+        module.pom.sha256.expectPut(credentials)
+        module.pom.sha512.expectPut(credentials)
+        module.pom.md5.expectPut(credentials)
+        module.moduleMetadata.expectPut(credentials)
+        module.moduleMetadata.sha1.expectPut(credentials)
+        module.moduleMetadata.sha256.expectPut(credentials)
+        module.moduleMetadata.sha512.expectPut(credentials)
+        module.moduleMetadata.md5.expectPut(credentials)
+
+        when:
+        executer.withArguments("-PmavenUser=${credentials.username}", "-PmavenPassword=${credentials.password}")
+        succeeds 'publish'
+
+        then:
+        def localPom = file("build/publications/maven/pom-default.xml").assertIsFile()
+        def localArtifact = file("build/libs/publish-2.jar").assertIsFile()
+
+        module.pomFile.assertIsCopyOf(localPom)
+        module.pom.verifyChecksums()
+        module.artifactFile.assertIsCopyOf(localArtifact)
+        module.artifact.verifyChecksums()
+
+        module.moduleMetadata.verifyChecksums()
+        module.rootMetaData.verifyChecksums()
+        module.rootMetaData.versions == ["2"]
+    }
+
+    @ToBeFixedForInstantExecution
+    def "fails with reasonable error message when credentials providers have no value"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'java'
+                id 'maven-publish'
+            }
+            version = '$version'
+            group = '$group'
+
+            publishing {
+                repositories {
+                    maven {
+                        url "${mavenRemoteRepo.uri}"
+                        credentials {
+                            username = providers.gradleProperty('mavenUser')
+                            password = providers.gradleProperty('mavenPassword')
+                        }
+                    }
+                }
+                publications {
+                    maven(MavenPublication) {
+                        from components.java
+                    }
+                }
+            }
+        """
+
+        when:
+        fails 'publish'
+
+        then:
+        failure.assertHasDescription("Some problems were found with the configuration of task ':publishMavenPublicationToMavenRepository' (type 'PublishToMavenRepository').")
+        failure.assertHasCause("No value has been specified for property 'username'")
+        failure.assertHasCause("No value has been specified for property 'password'")
+    }
+
     private String publicationBuild(String version, String group, URI uri, PasswordCredentials credentials = null) {
         String credentialsBlock = credentials ? """
-                        credentials{
+                        credentials {
                             username '${credentials.username}'
                             password '${credentials.password}'
                         }

@@ -16,7 +16,9 @@
 
 package org.gradle.caching.http;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.gradle.api.credentials.PasswordCredentials;
+import org.gradle.api.provider.Provider;
 
 import javax.annotation.Nullable;
 
@@ -50,6 +52,11 @@ public class HttpBuildCacheCredentials implements PasswordCredentials {
         this.username = username;
     }
 
+    @Override
+    public void setUsername(@Nullable Provider<String> username) {
+        throw new NotImplementedException();
+    }
+
     /**
      * Returns the password to use when authenticating to the HTTP build cache.
      *
@@ -69,5 +76,10 @@ public class HttpBuildCacheCredentials implements PasswordCredentials {
     @Override
     public void setPassword(@Nullable String password) {
         this.password = password;
+    }
+
+    @Override
+    public void setPassword(@Nullable Provider<String> password) {
+        throw new NotImplementedException();
     }
 }

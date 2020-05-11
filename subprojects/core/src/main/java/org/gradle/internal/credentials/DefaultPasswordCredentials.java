@@ -16,41 +16,67 @@
 package org.gradle.internal.credentials;
 
 import org.gradle.api.artifacts.repositories.PasswordCredentials;
+import org.gradle.api.internal.provider.DefaultProvider;
+import org.gradle.api.provider.Provider;
 
 public class DefaultPasswordCredentials implements PasswordCredentials {
-    private String username;
-    private String password;
+    private Provider<String> usernameProvider;
+    private Provider<String> passwordProvider;
 
     public DefaultPasswordCredentials() {
     }
 
     public DefaultPasswordCredentials(String username, String password) {
-        this.username = username;
-        this.password = password;
+        this.usernameProvider = new DefaultProvider<>(() -> username);
+        this.passwordProvider = new DefaultProvider<>(() -> password);
     }
 
     @Override
     public String getUsername() {
-        return username;
+        if (usernameProvider != null) {
+            return usernameProvider.get();
+        }
+        return null;
     }
 
     @Override
     public void setUsername(String username) {
-        this.username = username;
+        this.usernameProvider = new DefaultProvider<>(() -> username);
+    }
+
+    public Provider<String> getUsernameProvider() {
+        return usernameProvider;
+    }
+
+    @Override
+    public void setUsername(Provider<String> username) {
+        this.usernameProvider = username;
     }
 
     @Override
     public String getPassword() {
-        return password;
+        if (passwordProvider != null) {
+            return passwordProvider.get();
+        }
+        return null;
     }
 
     @Override
     public void setPassword(String password) {
-        this.password = password;
+        this.passwordProvider = new DefaultProvider<>(() -> password);
+    }
+
+    @Override
+    public void setPassword(Provider<String> password) {
+        this.passwordProvider = password;
+    }
+
+    public Provider<String> getPasswordProvider() {
+        return passwordProvider;
     }
 
     @Override
     public String toString() {
-        return String.format("Credentials [username: %s]", username);
+        return String.format("Credentials [username: %s]", usernameProvider != null ? usernameProvider.get() : null);
     }
 }

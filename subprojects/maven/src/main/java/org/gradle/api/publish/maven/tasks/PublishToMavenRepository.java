@@ -18,12 +18,15 @@ package org.gradle.api.publish.maven.tasks;
 
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.credentials.Credentials;
 import org.gradle.api.publish.internal.PublishOperation;
 import org.gradle.api.publish.maven.internal.publication.MavenPublicationInternal;
 import org.gradle.api.publish.maven.internal.publisher.MavenPublisher;
 import org.gradle.api.publish.maven.internal.publisher.ValidatingMavenPublisher;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.internal.artifacts.repositories.AuthenticationSupportedInternal;
+import org.gradle.internal.credentials.DefaultPasswordCredentials;
 
 /**
  * Publishes a {@link org.gradle.api.publish.maven.MavenPublication} to a {@link MavenArtifactRepository}.
@@ -32,6 +35,9 @@ import org.gradle.api.tasks.TaskAction;
  */
 public class PublishToMavenRepository extends AbstractPublishToMaven {
     private MavenArtifactRepository repository;
+
+    public PublishToMavenRepository() {
+    }
 
     /**
      * The repository to publish to.
@@ -50,6 +56,13 @@ public class PublishToMavenRepository extends AbstractPublishToMaven {
      */
     public void setRepository(MavenArtifactRepository repository) {
         this.repository = repository;
+
+        Credentials credentials = ((AuthenticationSupportedInternal) repository).getConfiguredCredentials();
+        if (credentials instanceof DefaultPasswordCredentials) {
+            DefaultPasswordCredentials passwordCredentials = (DefaultPasswordCredentials) credentials;
+            getInputs().property("username", passwordCredentials.getUsernameProvider());
+            getInputs().property("password", passwordCredentials.getPasswordProvider());
+        }
     }
 
     @TaskAction
